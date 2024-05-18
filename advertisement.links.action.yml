@@ -1,0 +1,5 @@
+advertisement.add_form:
+  title: 'Add advertisement'
+  route_name: entity.advertisement.add_form
+  appears_on:
+    - entity.advertisement.collection

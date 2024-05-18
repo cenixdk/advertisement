@@ -1,0 +1,10 @@
+entity.advertisement.edit_form:
+  route_name: entity.advertisement.edit_form
+  group: advertisement
+  title: 'Edit'
+
+entity.advertisement.delete_form:
+  route_name: entity.advertisement.delete_form
+  group: advertisement
+  title: 'Delete'
+  weight: 10

@@ -1,0 +1,7 @@
+entity.advertisement.settings:
+  path: 'admin/structure/advertisement'
+  defaults:
+    _form: '\Drupal\advertisement\Form\AdvertisementSettingsForm'
+    _title: 'Advertisement'
+  requirements:
+    _permission: 'administer advertisement'

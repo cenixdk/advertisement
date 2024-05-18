@@ -1,0 +1,5 @@
+name: 'Advertisement'
+type: module
+description: 'Manage ads'
+package: Cenix
+core_version_requirement: ^10 || ^11

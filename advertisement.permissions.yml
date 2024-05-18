@@ -1,0 +1,11 @@
+administer advertisement:
+  title: 'Administer advertisements'
+  restrict access: true
+view advertisement:
+  title: 'View advertisement'
+edit advertisement:
+  title: 'Edit advertisement'
+delete advertisement:
+  title: 'Delete advertisement'
+create advertisement:
+  title: 'Create advertisement'

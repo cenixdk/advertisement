@@ -1,0 +1,22 @@
+entity.advertisement.settings:
+  title: 'Settings'
+  route_name: entity.advertisement.settings
+  base_route: entity.advertisement.settings
+entity.advertisement.view:
+  title: 'View'
+  route_name: entity.advertisement.canonical
+  base_route: entity.advertisement.canonical
+entity.advertisement.edit_form:
+  title: 'Edit'
+  route_name: entity.advertisement.edit_form
+  base_route: entity.advertisement.canonical
+entity.advertisement.delete_form:
+  title: 'Delete'
+  route_name: entity.advertisement.delete_form
+  base_route: entity.advertisement.canonical
+  weight: 10
+entity.advertisement.collection:
+  title: 'Advertisements'
+  route_name: entity.advertisement.collection
+  base_route: system.admin_content
+  weight: 10

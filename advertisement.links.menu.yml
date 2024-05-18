@@ -1,0 +1,11 @@
+entity.advertisement.settings:
+  title: 'Advertisement'
+  description: 'Configure an Advertisement entity type.'
+  route_name:  entity.advertisement.settings
+  parent: system.admin_structure
+
+entity.advertisement.collection:
+  title: 'Advertisements'
+  description: 'List of advertisements.'
+  route_name: entity.advertisement.collection
+  parent: system.admin_content
