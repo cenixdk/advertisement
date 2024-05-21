@@ -1,0 +1,8 @@
+advertisement:
+  dependencies:
+    - core/jquery
+    - core/drupal
+    - core/drupalSettings
+    - core/once
+  js:
+    js/advertisement.js: {}
