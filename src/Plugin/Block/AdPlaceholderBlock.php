@@ -5,8 +5,6 @@ namespace Drupal\advertisement\Plugin\Block;
 use Drupal\Component\Utility\Html;
 use Drupal\Core\Block\BlockBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Field\BaseFieldDefinition;
-use Drupal\Core\StringTranslation\TranslatableMarkup;
 
 /**
  * Provides a banner ad placeholder block.
@@ -14,7 +12,7 @@ use Drupal\Core\StringTranslation\TranslatableMarkup;
  * @Block(
  *   id = "advertisement",
  *   admin_label = @Translation("Ad Placeholder"),
- *   category = @Translation("Advetisement")
+ *   category = @Translation("Advertisement")
  * )
  */
 class AdPlaceholderBlock extends BlockBase {
@@ -32,19 +30,6 @@ class AdPlaceholderBlock extends BlockBase {
    * {@inheritdoc}
    */
   public function blockForm($form, FormStateInterface $form_state) {
-    // $form['category'] = BaseFieldDefinition::create('text')
-    //   ->setLabel(new TranslatableMarkup('Category'))
-    //   ->setDisplayOptions('form', [
-    //     'type' => 'link_default',
-    //     'weight' => -3,
-    //   ])
-    //   ->setDisplayConfigurable('form', TRUE)
-    //   ->setDisplayOptions('view', [
-    //     'type' => 'link',
-    //     'weight' => -3,
-    //   ])
-    //   ->setDisplayConfigurable('view', TRUE);
-
     $form['category'] = [
       '#type' => 'text',
       '#title' => $this->t('Category'),
@@ -64,20 +49,36 @@ class AdPlaceholderBlock extends BlockBase {
    * {@inheritdoc}
    */
   public function build() {
+    $build = [];
+
     $html_id = $this->getPluginDefinition()['id'];
 
-    return [
-      'placeholder' => [
-        '#type' => 'html_tag',
-        '#tag' => 'ad-content',
-        '#attributes' => [
-          'id' => Html::getUniqueId($html_id),
-        ],
-        '#attached' => [
-          'library' => ['advertisement/advertisement'],
-        ],
+    $build['content'] = [
+      '#type' => 'html_tag',
+      '#tag' => 'ad-content',
+      '#attributes' => [
+        'id' => Html::getUniqueId($html_id),
+      ],
+      '#attached' => [
+        'library' => ['advertisement/advertisement'],
       ],
     ];
+
+    // Add cache metadata.
+    $build['#cache'] = [
+      'max-age' => $this->getCacheMaxAge(),
+    ];
+
+    return $build;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getCacheMaxAge() {
+    $cacheConfig = \Drupal::config('system.performance')->get('cache');
+
+    return $cacheConfig['page']['max_age'];
   }
 
 }

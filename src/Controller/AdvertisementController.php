@@ -3,11 +3,12 @@
 namespace Drupal\advertisement\Controller;
 
 use Drupal\advertisement\Entity\AdvertisementInterface;
+use Drupal\Core\Cache\CacheableJsonResponse;
+use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Render\RendererInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
@@ -49,13 +50,23 @@ class AdvertisementController extends ControllerBase implements ContainerInjecti
    * @return \Symfony\Component\HttpFoundation\JsonResponse
    *   The JSON response.
    */
-  public function render(Request $request): JsonResponse {
-    $response_data = [];
+  public function render(Request $request): CacheableJsonResponse {
+    $cacheConfig = \Drupal::config('system.performance')->get('cache');
+
     $request_data = $request->query->all();
     $build = $this->buildAdvertisement();
     $response_data[$request_data['id']] = $this->renderer->renderPlain($build);
 
-    return new JsonResponse($response_data);
+    $response_data['#cache'] = [
+      'max-age' => $cacheConfig['page']['max_age'],
+      'contexts' => [
+        'url',
+      ],
+    ];
+
+    $response = new CacheableJsonResponse($response_data);
+    $response->addCacheableDependency(CacheableMetadata::createFromRenderArray($response_data));
+    return $response;
   }
 
   /**

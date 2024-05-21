@@ -1,5 +1,7 @@
-name: 'Advertisement'
+name: "Advertisement"
 type: module
-description: 'Manage ads'
+description: "Manage ads"
 package: Cenix
 core_version_requirement: ^10 || ^11
+dependencies:
+  - drupal:block
