@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace Drupal\advertisement\Entity;
 
-use Drupal\advertisement\AdvertisementInterface;
-use Drupal\Core\Entity\ContentEntityBase;
+use Drupal\Core\Entity\EditorialContentEntityBase;
 use Drupal\Core\Entity\EntityChangedTrait;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\Core\Url;
 use Drupal\user\EntityOwnerTrait;
 
 /**
@@ -19,33 +20,43 @@ use Drupal\user\EntityOwnerTrait;
  *   id = "advertisement",
  *   label = @Translation("Advertisement"),
  *   label_collection = @Translation("Advertisements"),
- *   label_singular = @Translation("advertisement"),
- *   label_plural = @Translation("advertisements"),
+ *   label_singular = @Translation("Advertisement"),
+ *   label_plural = @Translation("Advertisements"),
  *   label_count = @PluralTranslation(
- *     singular = "@count advertisements",
+ *     singular = "@count advertisement",
  *     plural = "@count advertisements",
  *   ),
  *   handlers = {
- *     "list_builder" = "Drupal\advertisement\AdvertisementListBuilder",
+ *     "storage" = "Drupal\Core\Entity\Sql\SqlContentEntityStorage",
+ *     "access" = "Drupal\Core\Entity\EntityAccessControlHandler",
+ *     "list_builder" = "Drupal\advertisement\Entity\AdvertisementListBuilder",
+ *     "view_builder" = "Drupal\Core\Entity\EntityViewBuilder",
  *     "views_data" = "Drupal\views\EntityViewsData",
- *     "access" = "Drupal\advertisement\AdvertisementAccessControlHandler",
  *     "form" = {
  *       "add" = "Drupal\advertisement\Form\AdvertisementForm",
  *       "edit" = "Drupal\advertisement\Form\AdvertisementForm",
  *       "delete" = "Drupal\Core\Entity\ContentEntityDeleteForm",
- *       "delete-multiple-confirm" = "Drupal\Core\Entity\Form\DeleteMultipleForm",
+ *       "default" = "Drupal\Core\Entity\ContentEntityForm"
  *     },
  *     "route_provider" = {
  *       "html" = "Drupal\Core\Entity\Routing\AdminHtmlRouteProvider",
  *     },
  *   },
  *   base_table = "advertisement",
+ *   revision_table = "advertisement_revision",
  *   admin_permission = "administer advertisement",
  *   entity_keys = {
  *     "id" = "id",
- *     "label" = "label",
+ *     "revision" = "revision_id",
+ *     "label" = "title",
  *     "uuid" = "uuid",
+ *     "published" = "status",
  *     "owner" = "uid",
+ *   },
+ *   revision_metadata_keys = {
+ *     "revision_user" = "revision_user",
+ *     "revision_created" = "revision_created",
+ *     "revision_log_message" = "revision_log"
  *   },
  *   links = {
  *     "collection" = "/admin/content/advertisement",
@@ -53,15 +64,30 @@ use Drupal\user\EntityOwnerTrait;
  *     "canonical" = "/advertisement/{advertisement}",
  *     "edit-form" = "/advertisement/{advertisement}/edit",
  *     "delete-form" = "/advertisement/{advertisement}/delete",
- *     "delete-multiple-form" = "/admin/content/advertisement/delete-multiple",
  *   },
  *   field_ui_base_route = "entity.advertisement.settings",
+ *   render_cache = TRUE,
  * )
  */
-final class Advertisement extends ContentEntityBase implements AdvertisementInterface {
+class Advertisement extends EditorialContentEntityBase implements AdvertisementInterface {
 
   use EntityChangedTrait;
   use EntityOwnerTrait;
+
+  /**
+   * Get advertisement Identifier.
+   */
+  public function getAdvertisementIdentifier(): string {
+    return $this->uuid();
+  }
+
+  /**
+   * Get advertisement target URL.
+   */
+  public function getUrl(): ?Url {
+    $value = current($this->get('url')->getValue());
+    return $value ? Url::fromUri($value['uri'], $value['options']) : NULL;
+  }
 
   /**
    * {@inheritdoc}
@@ -78,13 +104,17 @@ final class Advertisement extends ContentEntityBase implements AdvertisementInte
    * {@inheritdoc}
    */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type): array {
-
+    /** @var \Drupal\Core\Field\BaseFieldDefinition[] $fields */
     $fields = parent::baseFieldDefinitions($entity_type);
 
-    $fields['label'] = BaseFieldDefinition::create('string')
-      ->setLabel(t('Label'))
+    $fields['status']
+      ->setDisplayConfigurable('form', TRUE)
+      ->setDisplayConfigurable('view', TRUE);
+
+    $fields['title'] = BaseFieldDefinition::create('string')
+      ->setLabel(new TranslatableMarkup('Title'))
       ->setRequired(TRUE)
-      ->setSetting('max_length', 255)
+      ->addConstraint('UniqueField', [])
       ->setDisplayOptions('form', [
         'type' => 'string_textfield',
         'weight' => -5,
@@ -97,46 +127,31 @@ final class Advertisement extends ContentEntityBase implements AdvertisementInte
       ])
       ->setDisplayConfigurable('view', TRUE);
 
-    $fields['status'] = BaseFieldDefinition::create('boolean')
-      ->setLabel(t('Status'))
-      ->setDefaultValue(TRUE)
-      ->setSetting('on_label', 'Enabled')
+    $fields['uid'] = BaseFieldDefinition::create('string')
+      ->setLabel(new TranslatableMarkup('Authored by'))
+      ->setDescription(t('The user ID of the author.'))
       ->setDisplayOptions('form', [
-        'type' => 'boolean_checkbox',
+        'type' => 'entity_reference_autocomplete',
+        'weight' => 5,
         'settings' => [
-          'display_label' => FALSE,
+          'match_operator' => 'CONTAINS',
+          'size' => '60',
+          'autocomplete_type' => 'tags',
+          'placeholder' => '',
         ],
-        'weight' => 0,
       ])
       ->setDisplayConfigurable('form', TRUE)
       ->setDisplayOptions('view', [
-        'type' => 'boolean',
-        'label' => 'above',
-        'weight' => 0,
-        'settings' => [
-          'format' => 'enabled-disabled',
-        ],
-      ])
-      ->setDisplayConfigurable('view', TRUE);
-
-    $fields['description'] = BaseFieldDefinition::create('text_long')
-      ->setLabel(t('Description'))
-      ->setDisplayOptions('form', [
-        'type' => 'text_textarea',
-        'weight' => 10,
-      ])
-      ->setDisplayConfigurable('form', TRUE)
-      ->setDisplayOptions('view', [
-        'type' => 'text_default',
-        'label' => 'above',
-        'weight' => 10,
+        'label' => 'hidden',
+        'type' => 'author',
+        'weight' => 5,
       ])
       ->setDisplayConfigurable('view', TRUE);
 
     $fields['image'] = BaseFieldDefinition::create('image')
-      ->setLabel(t('Image'))
+      ->setLabel(new TranslatableMarkup('Image'))
       ->setDisplayOptions('form', [
-        'type' => 'text_textarea',
+        'type' => 'managed_file',
         'weight' => 10,
       ])
       ->setDisplayConfigurable('form', TRUE)
@@ -147,54 +162,39 @@ final class Advertisement extends ContentEntityBase implements AdvertisementInte
       ])
       ->setRequired(TRUE);
 
-    $fields['link'] = BaseFieldDefinition::create('link')
-      ->setLabel(t('Link'))
+    $fields['url'] = BaseFieldDefinition::create('link')
+      ->setLabel(new TranslatableMarkup('URL'))
+      ->setDescription(new TranslatableMarkup('The URL to be taken to when clicking on the AD.'))
+      ->setRequired(TRUE)
       ->setDisplayOptions('form', [
-        'type' => 'text_textarea',
-        'weight' => 10,
-      ])
-      ->setRequired(TRUE);
-
-    $fields['uid'] = BaseFieldDefinition::create('entity_reference')
-      ->setLabel(t('Author'))
-      ->setSetting('target_type', 'user')
-      ->setDefaultValueCallback(self::class . '::getDefaultEntityOwner')
-      ->setDisplayOptions('form', [
-        'type' => 'entity_reference_autocomplete',
-        'settings' => [
-          'match_operator' => 'CONTAINS',
-          'size' => 60,
-          'placeholder' => '',
-        ],
-        'weight' => 15,
+        'type' => 'link_default',
+        'weight' => -3,
       ])
       ->setDisplayConfigurable('form', TRUE)
       ->setDisplayOptions('view', [
-        'label' => 'above',
-        'type' => 'author',
-        'weight' => 15,
+        'type' => 'link',
+        'weight' => -3,
       ])
       ->setDisplayConfigurable('view', TRUE);
 
     $fields['created'] = BaseFieldDefinition::create('created')
-      ->setLabel(t('Authored on'))
-      ->setDescription(t('The time that the advertisement was created.'))
-      ->setDisplayOptions('view', [
-        'label' => 'above',
-        'type' => 'timestamp',
-        'weight' => 20,
-      ])
-      ->setDisplayConfigurable('form', TRUE)
+      ->setLabel(new TranslatableMarkup('Authored on'))
+      ->setDescription(new TranslatableMarkup('The time that the AD was created.'))
       ->setDisplayOptions('form', [
         'type' => 'datetime_timestamp',
-        'weight' => 20,
+        'weight' => 10,
+      ])
+      ->setDisplayConfigurable('form', TRUE)
+      ->setDisplayOptions('view', [
+        'label' => 'hidden',
+        'type' => 'timestamp',
+        'weight' => 0,
       ])
       ->setDisplayConfigurable('view', TRUE);
 
     $fields['changed'] = BaseFieldDefinition::create('changed')
-      ->setLabel(t('Changed'))
-      ->setDescription(t('The time that the advertisement was last edited.'));
-
+      ->setLabel(new TranslatableMarkup('Changed'))
+      ->setDescription(new TranslatableMarkup('The time that the AD was last edited.'));
     return $fields;
   }
 
