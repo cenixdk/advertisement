@@ -4,12 +4,13 @@
       $(once("render-advertisements", "ad-content", context)).each(function () {
         let placeholder = $(this);
         let url = Drupal.url("advertisement/render");
+
         $.get(
           url,
           { id: placeholder.attr("id") },
           function (responseData) {
             for (let id in responseData) {
-              if (responseData.hasOwnProperty(id)) {
+              if (id !== '#cache' && responseData.hasOwnProperty(id)) {
                 $("#" + id).html(responseData[id]);
               }
             }

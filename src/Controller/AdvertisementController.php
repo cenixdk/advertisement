@@ -12,7 +12,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
- * AD impression controller.
+ * Acvertisement controller.
  */
 class AdvertisementController extends ControllerBase implements ContainerInjectionInterface {
   /**
@@ -23,7 +23,7 @@ class AdvertisementController extends ControllerBase implements ContainerInjecti
   protected RendererInterface $renderer;
 
   /**
-   * Impression constructor.
+   * Constructor.
    *
    * @param \Drupal\Core\Render\RendererInterface $renderer
    *   The renderer service.
@@ -43,22 +43,20 @@ class AdvertisementController extends ControllerBase implements ContainerInjecti
 
   /**
    * Renders the Advertisements.
-   *
-   * @param \Symfony\Component\HttpFoundation\Request $request
-   *   The HTTP request.
-   *
-   * @return \Symfony\Component\HttpFoundation\JsonResponse
-   *   The JSON response.
    */
   public function render(Request $request): CacheableJsonResponse {
-    $cacheConfig = \Drupal::config('system.performance')->get('cache');
+    $advertisementConfig = \Drupal::config('advertisement.settings');
+    $cacheConfig = \Drupal::config('system.performance');
 
     $request_data = $request->query->all();
     $build = $this->buildAdvertisement();
     $response_data[$request_data['id']] = $this->renderer->renderPlain($build);
 
+    // Get cache setting from module if present else use system setting.
+    $cacheMaxAge = $advertisementConfig->get('cache.page.max_age') ?? $cacheConfig->get('cache.page.max_age');
+
     $response_data['#cache'] = [
-      'max-age' => $cacheConfig['page']['max_age'],
+      'max-age' => intval($cacheMaxAge),
       'contexts' => [
         'url',
       ],
@@ -66,6 +64,7 @@ class AdvertisementController extends ControllerBase implements ContainerInjecti
 
     $response = new CacheableJsonResponse($response_data);
     $response->addCacheableDependency(CacheableMetadata::createFromRenderArray($response_data));
+
     return $response;
   }
 

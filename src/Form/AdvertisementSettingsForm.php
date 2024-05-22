@@ -8,6 +8,7 @@ use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Datetime\DateFormatterInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\node\Entity\NodeType;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -72,6 +73,29 @@ final class AdvertisementSettingsForm extends ConfigFormBase {
       '#markup' => $this->t('Configurations for the Advertisement module'),
     ];
 
+    $form['targeting'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Targeting'),
+      '#open' => TRUE,
+    ];
+
+    $contentTypes = \Drupal::entityTypeManager()
+      ->getStorage('node_type')
+      ->loadMultiple();
+
+    $contentTypeOptions = array_combine(
+      array_keys($contentTypes),
+      array_map(fn(NodeType $contentType) => $contentType->label(), $contentTypes)
+    );
+    $form['targeting']['content_types'] = [
+      '#type' => 'select',
+      '#multiple' => TRUE,
+      '#title' => $this->t('Advertisement enabled content types'),
+      '#options' => $contentTypeOptions,
+      '#default_value' => $config->get('targeting.content_types') ?? [],
+      '#description' => $this->t('Select which content types that may display advertisements.'),
+    ];
+
     $form['caching'] = [
       '#type' => 'details',
       '#title' => $this->t('Caching'),
@@ -97,6 +121,7 @@ final class AdvertisementSettingsForm extends ConfigFormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $this->config('advertisement.settings')
+      ->set('targeting.content_types', $form_state->getValue('content_types'))
       ->set('cache.page.max_age', $form_state->getValue('page_cache_maximum_age'))
       ->save();
 
