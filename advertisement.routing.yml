@@ -5,6 +5,7 @@ entity.advertisement.settings:
     _title: "Advertisement"
   requirements:
     _permission: "administer advertisement"
+
 advertisement.render:
   path: "/advertisement/render"
   defaults:
@@ -12,3 +13,11 @@ advertisement.render:
     _title: "Render Advertisement"
   requirements:
     _permission: "access content"
+
+advertisement.settings:
+  path: '/admin/config/advertisement'
+  defaults:
+    _form: '\Drupal\advertisement\Form\AdvertisementSettingsForm'
+    _title: 'Advertisement settings'
+  requirements:
+    _permission: 'administer site configuration'

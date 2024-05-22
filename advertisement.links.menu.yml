@@ -9,3 +9,9 @@ entity.advertisement.collection:
   description: 'List of advertisements.'
   route_name: entity.advertisement.collection
   parent: system.admin_content
+
+advertisement.settings:
+  title: 'Advertisement'
+  description: 'Configure the Advertisement module.'
+  route_name: advertisement.settings
+  parent: system.admin_config
